@@ -16,5 +16,11 @@
         android:layout_height="wrap_content"
         android:text="停止"
         android:layout_below="@id/record"/>
+    <Button
+        android:id="@+id/recordVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/stop"
+        android:text="开始录屏"/>
 
 </RelativeLayout>

@@ -65,13 +65,14 @@ public class AudioRecorder {
         @Override
         public void run() {
                 long audioPresentationTimeNs; //音频时间戳 pts
+                //获取最小缓冲区大小
                 int bufferSizeInBytes = AudioRecord.getMinBufferSize(SAMPLE_RATE,CHANNEL_CONFIG,AUDIO_FORMAT);
                 AudioRecord audioRecord = new AudioRecord(
-                        AUDIO_SOURCE,
-                        SAMPLE_RATE,
-                        CHANNEL_CONFIG,
-                        AUDIO_FORMAT,
-                        bufferSizeInBytes
+                        AUDIO_SOURCE,   //音频源
+                        SAMPLE_RATE,    //采样率
+                        CHANNEL_CONFIG,  //音频通道
+                        AUDIO_FORMAT,    //音频格式
+                        bufferSizeInBytes //缓冲区
                 );
                 audioRecord.startRecording();
                 is_recording = true;
@@ -81,12 +82,13 @@ public class AudioRecorder {
             while(is_recording) {
                   byte[] buffer = new byte[samples_per_frame];
                   audioPresentationTimeNs = System.nanoTime();
-                    Log.d("hsk","System.nanotime--"+audioPresentationTimeNs);
+                    //从缓冲区中读取数据，存入到buffer字节数组数组中
                     bufferReadResult = audioRecord.read(buffer,0,samples_per_frame);
                     //判断是否读取成功
                     if(bufferReadResult == AudioRecord.ERROR_BAD_VALUE || bufferReadResult == AudioRecord.ERROR_INVALID_OPERATION)
                         Log.e(TAG, "Read error");
                     if(audioRecord!=null) {
+                        //将音频数据发送给AudioEncoder类进行编码
                         audioEncoder.offerAudioEncoder(buffer,audioPresentationTimeNs);
                     }
 

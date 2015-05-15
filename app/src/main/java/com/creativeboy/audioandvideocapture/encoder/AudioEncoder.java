@@ -30,7 +30,6 @@ public class AudioEncoder {
     private long audioStartTime;
     private String recordFile ;
     private boolean eosReceived = false;  //终止录音的标志
-    boolean stopReceived = false;
     private ExecutorService encodingService = Executors.newSingleThreadExecutor(); //序列化线程任务
     //枚举值 一个用来标志编码 一个标志编码完成
     enum EncoderTaskType {ENCODE_FRAME,FINALIZE_ENCODER};
@@ -45,7 +44,6 @@ public class AudioEncoder {
     }
     public void prepareEncoder() {
         eosReceived = false;
-        stopReceived =false;
         audioBytesReceived = 0;
         mAudioBufferInfo = new MediaCodec.BufferInfo();
         mAudioFormat = new MediaFormat();
@@ -146,7 +144,6 @@ public class AudioEncoder {
                     encodeData.position(bufferInfo.offset);
                     encodeData.limit(bufferInfo.offset + bufferInfo.size);
                     mMediaMuxer.writeSampleData(trackIndex.index,encodeData,bufferInfo);
-//                    mMediaMuxer.writeSampleData(trackIndex.index,encodeData,bufferInfo);
                 }
 
                 encoder.releaseOutputBuffer(encoderIndex,false);
@@ -197,7 +194,6 @@ public class AudioEncoder {
     //终止编码
     public void _stop() {
         eosReceived = true;
-        stopReceived =true;
         Log.d(TAG,"停止编码");
     }
 
