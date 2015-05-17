@@ -79,6 +79,8 @@ public class MainActivity extends ActionBarActivity {
                 if (screenRecorder != null) {
                     screenRecorder.quit();
                     screenRecorder = null;
+                    audioRecorder.stopAudioRecording();
+                    audioEncoder.stop();
                     recordVideo.setText("开始录屏");
                 } else {
 
@@ -124,6 +126,10 @@ public class MainActivity extends ActionBarActivity {
         screenRecorder = new ScreenRecorder(width,height,file.getAbsolutePath(),mDisplayManager);
         screenRecorder.start();
         recordVideo.setText("停止录屏");
+        audioRecorder = AudioRecorder.getInstance(file);
+        audioEncoder = new AudioEncoder();
+        audioRecorder.setAudioEncoder(audioEncoder);
+        audioRecorder.startAudioRecording();
         moveTaskToBack(true);
     }
 

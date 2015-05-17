@@ -31,6 +31,7 @@ public class AudioEncoder {
     private String recordFile ;
     private boolean eosReceived = false;  //终止录音的标志
     private ExecutorService encodingService = Executors.newSingleThreadExecutor(); //序列化线程任务
+    private MediaMuxerWrapper mediaMuxerWrapper;
     //枚举值 一个用来标志编码 一个标志编码完成
     enum EncoderTaskType {ENCODE_FRAME,FINALIZE_ENCODER};
 
@@ -55,9 +56,13 @@ public class AudioEncoder {
         mAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,16384);
         try {
             mAudioCodec = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
-            mAudioCodec.configure(mAudioFormat,null,null,MediaCodec.CONFIGURE_FLAG_ENCODE);
+            mAudioCodec.configure(mAudioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             mAudioCodec.start();
-            mMediaMuxer = new MediaMuxer(recordFile,MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+           // mMediaMuxer = new MediaMuxer(recordFile,MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            //if(!MediaMuxerWrapper.isInstance) {
+                mediaMuxerWrapper = new MediaMuxerWrapper(recordFile);
+                Log.d(TAG,"MediaMuxerWrapper is instance");
+            //}
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -95,7 +100,8 @@ public class AudioEncoder {
                 if(eosReceived) {
                     mAudioCodec.queueInputBuffer(inputBufferIndex, 0, input.length, presentationTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                     closeEncoder(mAudioCodec, mAudioBufferInfo, mAudioTrackIndex);
-                    closeMuxer();
+                    ///closeMuxer();
+                    mediaMuxerWrapper.release();
                     encodingService.shutdown();
 
                 }else {
@@ -127,8 +133,12 @@ public class AudioEncoder {
                 if(mMuxerStart)
                     throw new RuntimeException("format 在muxer启动后发生了改变");
                 MediaFormat newFormat = encoder.getOutputFormat();
-                trackIndex.index = mMediaMuxer.addTrack(newFormat);
-                mMediaMuxer.start();
+                //trackIndex.index = mMediaMuxer.addTrack(newFormat);
+                trackIndex.index = mediaMuxerWrapper.addTrack(newFormat);
+                //mMediaMuxer.start();
+                if(!mediaMuxerWrapper.isStarted()) {
+                    mediaMuxerWrapper.start();
+                }
                 mMuxerStart = true;
             }else if(encoderIndex<0) {
                 Log.w(TAG,"encoderIndex 非法"+encoderIndex);
@@ -143,7 +153,8 @@ public class AudioEncoder {
                     }
                     encodeData.position(bufferInfo.offset);
                     encodeData.limit(bufferInfo.offset + bufferInfo.size);
-                    mMediaMuxer.writeSampleData(trackIndex.index,encodeData,bufferInfo);
+                    //mMediaMuxer.writeSampleData(trackIndex.index,encodeData,bufferInfo);
+                    mediaMuxerWrapper.writeSampleData(trackIndex.index,encodeData,bufferInfo);
                 }
 
                 encoder.releaseOutputBuffer(encoderIndex,false);

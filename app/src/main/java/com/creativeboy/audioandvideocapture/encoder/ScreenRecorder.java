@@ -26,6 +26,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Surface;
 import android.widget.Toast;
@@ -58,6 +59,7 @@ public class ScreenRecorder extends Thread
 	private static final String MIME_TYPE = "video/avc"; // H.264 Advanced Video
 															// Coding
 	private  int mDpi = 1;
+	private MediaMuxerWrapper mediaMuxerWrapper;
 	public ScreenRecorder(int width, int height,
 			 String dstPath,DisplayManager dm)
 	{
@@ -66,7 +68,6 @@ public class ScreenRecorder extends Thread
 		mHeight = height;
 		mDstPath = dstPath;
 		mDisplayManager = dm;
-
 	}
 
 	/**
@@ -92,8 +93,16 @@ public class ScreenRecorder extends Thread
 		mEncoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 		mSurface = mEncoder.createInputSurface();
 		mEncoder.start();
-		mMuxer = new MediaMuxer(mDstPath,
-				MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+//		mMuxer = new MediaMuxer(mDstPath,
+//				MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+
+		Log.d(TAG,"mEncoder--"+mEncoder);
+
+		//if(!MediaMuxerWrapper.isInstance) {
+			Log.d(TAG,"mediamuxer is instance?--"+MediaMuxerWrapper.isInstance);
+			mediaMuxerWrapper = new MediaMuxerWrapper(mDstPath);
+		//}
+
 	}
 
 	@Override
@@ -119,6 +128,7 @@ public class ScreenRecorder extends Thread
 			try
 			{
 				release();
+				mediaMuxerWrapper.release();
 			} catch (Exception e)
 			{
 				e.printStackTrace();
@@ -145,9 +155,14 @@ public class ScreenRecorder extends Thread
 
 				// Log.i(TAG,
 				// "output format changed.\n new format: " + newFormat.toString());
-				mVideoTrackIndex = mMuxer.addTrack(newFormat);
+				//mVideoTrackIndex = mMuxer.addTrack(newFormat);
 				Log.d(TAG,"mVideotrackIndex---"+mVideoTrackIndex);
-				mMuxer.start();
+				//mMuxer.start();
+				mVideoTrackIndex = mediaMuxerWrapper.addTrack(newFormat);
+				if(!mediaMuxerWrapper.isStarted()) {
+					Log.d(TAG,"mediaMuxerWrapper is stared");
+					mediaMuxerWrapper.start();
+				}
 				mMuxerStarted = true;
 			} else if (encoderIndex == MediaCodec.INFO_TRY_AGAIN_LATER)
 			{
@@ -198,14 +213,14 @@ public class ScreenRecorder extends Thread
 			// + ", presentationTimeUs=" + mBufferInfo.presentationTimeUs
 			// + ", offset=" + mBufferInfo.offset);
 		}
-		// It's usually necessary to adjust the ByteBuffer values to match
-		// BufferInfo.
+
 		if (encodedData != null)
 		{
 			encodedData.position(mBufferInfo.offset);
 			encodedData.limit(mBufferInfo.offset + mBufferInfo.size);
-			mMuxer.writeSampleData(mVideoTrackIndex, encodedData, mBufferInfo);
-			// Log.i(TAG, "sent " + mBufferInfo.size + " bytes to muxer...");
+			//mMuxer.writeSampleData(mVideoTrackIndex, encodedData, mBufferInfo);
+			mediaMuxerWrapper.writeSampleData(mVideoTrackIndex,encodedData,mBufferInfo);
+			 Log.i(TAG, "sent " + mBufferInfo.size + " bytes to muxer...");
 		}
 	}
 
@@ -226,11 +241,11 @@ public class ScreenRecorder extends Thread
 		{
 			mDisplayManager = null;
 		}
-		if (mMuxer != null)
-		{
-			mMuxer.stop();
-			mMuxer.release();
-			mMuxer = null;
-		}
+//		if (mMuxer != null)
+//		{
+//			mMuxer.stop();
+//			mMuxer.release();
+//			mMuxer = null;
+//		}
 	}
 }
